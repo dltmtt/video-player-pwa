@@ -61,3 +61,9 @@ self.addEventListener("activate", (e) => {
     })(),
   );
 });
+
+if (typeof chrome !== "undefined" && chrome.action) {
+  chrome.action.onClicked.addListener(() => {
+    chrome.tabs.create({ url: chrome.runtime.getURL("index.html") });
+  });
+}
