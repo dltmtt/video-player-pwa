@@ -7,7 +7,7 @@
     "email": "deltonmatteo@gmail.com"
   },
   "homepage_url": "https://github.com/dltmtt/video-player",
-  "version": "1.3.1",
+  "version": "1.3.2",
   "offline_enabled": true,
   "background": {
     "service_worker": "service-worker.js"
