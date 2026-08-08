@@ -1,5 +1,12 @@
 {
   "formatter": {
     "indentStyle": "space" // default is `tab`
+  },
+  "linter": {
+    "rules": {
+      "a11y": {
+        "useMediaCaption": "off"
+      }
+    }
   }
 }
