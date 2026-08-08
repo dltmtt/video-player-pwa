@@ -15,7 +15,9 @@
 
 body {
   block-size: 100vb;
-  font: 0.8375rem "JetBrains Mono", monospace;
+  font:
+    0.8375rem "JetBrains Mono",
+    monospace;
 }
 
 #drag-panel,
@@ -123,8 +125,8 @@ body {
 
   button {
     transition: var(--duration);
-    transition-property: color, background-color, box-shadow,
-      font-variation-settings;
+    transition-property:
+      color, background-color, box-shadow, font-variation-settings;
 
     &:is(:hover, :focus-visible) {
       color: var(--text1);
@@ -152,12 +154,13 @@ body {
   appearance: none;
   block-size: var(--track-height);
   color: var(--text2);
-  background: no-repeat left / var(--progress, 0%)
+  background:
+    no-repeat left / var(--progress, 0%)
     linear-gradient(currentcolor, currentcolor) var(--surface3);
   transition: var(--duration);
   transition-property: block-size, height, filter;
 
-  &:is(:hover, :focus-visible) {
+  &:where(:hover, :focus-visible) {
     --track-height: 0.5rem;
   }
 
@@ -240,7 +243,7 @@ body {
     margin-inline-start: calc(-1 * var(--buttons-size));
   }
 
-  &:is(:hover, :focus-visible) {
+  &:where(:hover, :focus-visible) {
     inline-size: calc(var(--text-size) + var(--buttons-size));
 
     &::-webkit-inner-spin-button {
