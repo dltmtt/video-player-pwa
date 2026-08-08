@@ -3,6 +3,7 @@
 This video player is a PWA that allows you to watch local videos in your browser. It supports the following features:
 
 - Light/dark theme (following system preferences)
+- Subtitles & captions support (`.vtt`, `.srt` files via file picker or drag-and-drop)
 - Continue watching from where you left off[^1]
 - [Keyboard shortcuts](#keyboard-shortcuts)
 - Global Media Controls integration
@@ -19,7 +20,7 @@ This video player is a PWA that allows you to watch local videos in your browser
 
 ## Usage
 
-To open a video, drag and drop it onto the app or click on the `Choose file` button.
+To open a video, drag and drop it onto the app or click on the `Choose file` button. Subtitle files (`.vtt` or `.srt`) can also be dropped directly onto the player or loaded via the subtitles button.
 If another video is opened, its state will be saved and the dragged video will replace the current one.
 
 Alternatively, install the PWA, right click on the video you want to open, select `Open With` and choose this app.
@@ -41,6 +42,8 @@ The following keyboard shortcuts are supported:
 |                      <kbd>R</kbd>                      | Reset default speed   |
 |                      <kbd>T</kbd>                      | Toggle time/remaining |
 |                      <kbd>A</kbd>                      | Set speed to 1.8x     |
+|                      <kbd>V</kbd>                      | Toggle/load subtitles |
 |                      <kbd>C</kbd>                      | Toggle video zoom     |
 |                      <kbd>P</kbd>                      | Toggle PiP            |
 |            <kbd>F</kbd><br><kbd>Enter</kbd>            | Toggle fullscreen     |
+

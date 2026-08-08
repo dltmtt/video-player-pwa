@@ -46,6 +46,7 @@
         aria-label="Rewind 10 seconds"
         class="material-symbols-rounded"
         id="replay-btn"
+        title="Rewind 10 seconds (Z)"
       >
         replay_10
       </button>
@@ -55,6 +56,7 @@
         class="material-symbols-rounded"
         id="play-btn"
         tabindex="0"
+        title="Play/pause (Space)"
       >
         play_arrow
       </button>
@@ -63,6 +65,7 @@
         aria-label="Forward 10 seconds"
         class="material-symbols-rounded"
         id="forward-btn"
+        title="Forward 10 seconds (X)"
       >
         forward_10
       </button>
@@ -72,6 +75,7 @@
         aria-label="Toggle time indicator"
         id="time-indicator-toggle"
         data-state="default"
+        title="Toggle remaining / elapsed time (T)"
       >
         <time role="timer" id="time-indicator">00:00</time>
         <time role="timer" id="duration-or-finish-at"></time>
@@ -91,9 +95,19 @@
       />
       <button
         type="button"
+        aria-label="Load subtitles"
+        class="material-symbols-rounded"
+        id="subtitles-btn"
+        title="Load subtitles (V)"
+      >
+        subtitles_off
+      </button>
+      <button
+        type="button"
         aria-label="Toggle zoom"
         class="material-symbols-rounded"
         id="zoom-btn"
+        title="Toggle zoom (C)"
       >
         zoom_out_map
       </button>
@@ -102,9 +116,11 @@
         aria-label="Toggle fullscreen"
         class="material-symbols-rounded"
         id="fullscreen-btn"
+        title="Toggle fullscreen (F)"
       >
         fullscreen
       </button>
     </div>
+    <input type="file" id="subtitle-picker" accept=".vtt,.srt" hidden />
   </div>
 </html>

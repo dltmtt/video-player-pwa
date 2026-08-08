@@ -21,6 +21,8 @@ const playBtn = document.querySelector("#play-btn");
 const fullscreenBtn = document.querySelector("#fullscreen-btn");
 const zoomBtn = document.querySelector("#zoom-btn");
 const speedControls = document.querySelector("#speed-controls");
+const subtitlesBtn = document.querySelector("#subtitles-btn");
+const subtitlePicker = document.querySelector("#subtitle-picker");
 
 const progressBar = document.querySelector("#video-bar");
 const timeIndicatorToggle = document.querySelector("#time-indicator-toggle");
@@ -29,18 +31,175 @@ const replayBtn = document.querySelector("#replay-btn");
 const forwardBtn = document.querySelector("#forward-btn");
 const durationOrFinishAt = document.querySelector("#duration-or-finish-at");
 
+let currentTrackUrl = null;
+
+// SUBTITLE & FILE HELPER FUNCTIONS
+function isVideoFile(file) {
+  if (!file) return false;
+  const name = file.name ? file.name.toLowerCase() : "";
+  const type = file.type ? file.type.toLowerCase() : "";
+  return (
+    type.startsWith("video/") ||
+    /\.(mp4|mkv|webm|avi|mov|wmv|flv|m4v|ogv)$/i.test(name)
+  );
+}
+
+function isSubtitleFile(file) {
+  if (!file) return false;
+  const name = file.name ? file.name.toLowerCase() : "";
+  const type = file.type ? file.type.toLowerCase() : "";
+  return (
+    name.endsWith(".vtt") ||
+    name.endsWith(".srt") ||
+    type === "text/vtt" ||
+    type === "application/x-subrip"
+  );
+}
+
+function srtToVtt(srtText) {
+  let vtt = srtText
+    .replace(/^\uFEFF/, "")
+    .replace(/\r\n/g, "\n")
+    .replace(/\r/g, "\n");
+  vtt = vtt.replace(/(\d{2}:\d{2}:\d{2}),(\d{3})/g, "$1.$2");
+  return `WEBVTT\n\n${vtt}`;
+}
+
+function clearSubtitles() {
+  if (currentTrackUrl) {
+    URL.revokeObjectURL(currentTrackUrl);
+    currentTrackUrl = null;
+  }
+  const tracks = video.querySelectorAll("track");
+  for (const t of tracks) {
+    t.remove();
+  }
+  updateSubtitlesBtnState();
+}
+
+async function loadSubtitleFile(file) {
+  if (!file) return;
+
+  clearSubtitles();
+
+  try {
+    const text = await file.text();
+    let vttContent;
+    if (
+      file.name.toLowerCase().endsWith(".vtt") ||
+      text.trim().startsWith("WEBVTT")
+    ) {
+      vttContent = text;
+    } else {
+      vttContent = srtToVtt(text);
+    }
+
+    const blob = new Blob([vttContent], { type: "text/vtt" });
+    currentTrackUrl = URL.createObjectURL(blob);
+
+    const track = document.createElement("track");
+    track.kind = "subtitles";
+    track.label = file.name.replace(/\.[^.]+$/, "");
+    track.srclang = "en";
+    track.src = currentTrackUrl;
+    track.default = true;
+
+    video.appendChild(track);
+
+    if (track.track) {
+      track.track.mode = "showing";
+    }
+
+    if (video.textTracks && video.textTracks.length > 0) {
+      for (let i = 0; i < video.textTracks.length; i++) {
+        video.textTracks[i].mode =
+          i === video.textTracks.length - 1 ? "showing" : "disabled";
+      }
+    }
+
+    updateSubtitlesBtnState();
+  } catch (err) {
+    console.error("Failed to load subtitle file:", err);
+  }
+}
+
+async function pickSubtitleFile() {
+  if ("showOpenFilePicker" in window) {
+    try {
+      const [fileHandle] = await window.showOpenFilePicker({
+        types: [
+          {
+            description: "Subtitles",
+            accept: {
+              "text/vtt": [".vtt"],
+              "application/x-subrip": [".srt"],
+              "text/plain": [".srt", ".vtt"],
+            },
+          },
+        ],
+        multiple: false,
+      });
+      const file = await fileHandle.getFile();
+      await loadSubtitleFile(file);
+    } catch (_abortError) {
+      // User cancelled
+    }
+  } else {
+    subtitlePicker?.click();
+  }
+}
+
+function toggleSubtitles() {
+  const tracks = video.textTracks;
+  if (!tracks || tracks.length === 0) {
+    pickSubtitleFile();
+    return;
+  }
+
+  const anyShowing = Array.from(tracks).some((t) => t.mode === "showing");
+
+  for (let i = 0; i < tracks.length; i++) {
+    tracks[i].mode = anyShowing ? "disabled" : "showing";
+  }
+
+  updateSubtitlesBtnState();
+}
+
+function updateSubtitlesBtnState() {
+  if (!subtitlesBtn) return;
+  const tracks = video.textTracks;
+  const hasShowingTrack =
+    tracks && Array.from(tracks).some((t) => t.mode === "showing");
+  const hasAnyTrack = tracks && tracks.length > 0;
+
+  if (hasShowingTrack) {
+    subtitlesBtn.textContent = "subtitles";
+    subtitlesBtn.dataset.active = "true";
+    subtitlesBtn.setAttribute("aria-label", "Disable subtitles");
+    subtitlesBtn.title =
+      "Subtitles on (Click to disable, right-click to load file)";
+  } else {
+    subtitlesBtn.textContent = "subtitles_off";
+    delete subtitlesBtn.dataset.active;
+    if (hasAnyTrack) {
+      subtitlesBtn.setAttribute("aria-label", "Enable subtitles");
+      subtitlesBtn.title =
+        "Subtitles off (Click to enable, right-click to load file)";
+    } else {
+      subtitlesBtn.setAttribute("aria-label", "Load subtitles");
+      subtitlesBtn.title = "Load subtitles (Click or press V)";
+    }
+  }
+}
+
 // DRAG AND DROP
 let localStorageKey;
 const LOCAL_STORAGE_NAMESPACE = "video-player_";
 
 for (const droppable of droppableElements) {
-  droppable.addEventListener("dragenter", (e) => {
-    const type = e.dataTransfer.items[0].type.split("/")[0];
-
-    if (type === "video") {
-      droppable.dataset.fileHover = true;
-      dropOverlay.hidden = false;
-    }
+  droppable.addEventListener("dragenter", (_e) => {
+    droppable.dataset.fileHover = true;
+    dropOverlay.hidden = false;
   });
 }
 
@@ -49,15 +208,63 @@ dropOverlay.addEventListener("dragover", (e) => e.preventDefault());
 dropOverlay.addEventListener("drop", async (e) => {
   e.preventDefault();
 
-  // A video has been dropped on the home screen (not on another video)
-  if (!video.src) {
-    showLoadingScreen();
+  const fileHandles = [];
+  const files = [];
+
+  if (e.dataTransfer.items) {
+    for (const item of e.dataTransfer.items) {
+      if (item.kind === "file") {
+        if ("getAsFileSystemHandle" in item) {
+          try {
+            const handle = await item.getAsFileSystemHandle();
+            if (handle) fileHandles.push(handle);
+          } catch (_err) {
+            const f = item.getAsFile();
+            if (f) files.push(f);
+          }
+        } else {
+          const f = item.getAsFile();
+          if (f) files.push(f);
+        }
+      }
+    }
+  } else if (e.dataTransfer.files) {
+    files.push(...e.dataTransfer.files);
   }
 
-  // Type check is done in dragenter and in the click handler
-  const fileHandle = await e.dataTransfer.items[0].getAsFileSystemHandle();
+  const allItems = [];
+  for (const handle of fileHandles) {
+    if (handle.kind === "file") {
+      const file = await handle.getFile();
+      allItems.push({ file, handle });
+    }
+  }
+  for (const file of files) {
+    allItems.push({ file, handle: null });
+  }
 
-  manageFileHandle(fileHandle);
+  const videoItem = allItems.find((i) => isVideoFile(i.file));
+  const subtitleItem = allItems.find((i) => isSubtitleFile(i.file));
+
+  if (videoItem) {
+    if (!video.src) {
+      showLoadingScreen();
+    }
+    await manageFileHandle(videoItem.handle || videoItem.file);
+  }
+
+  if (subtitleItem) {
+    await loadSubtitleFile(subtitleItem.file);
+  } else if (!videoItem && allItems.length > 0) {
+    const first = allItems[0];
+    if (isSubtitleFile(first.file)) {
+      await loadSubtitleFile(first.file);
+    } else {
+      if (!video.src) showLoadingScreen();
+      await manageFileHandle(first.handle || first.file);
+    }
+  }
+
   handleDragEnd();
 });
 
@@ -101,7 +308,7 @@ function showLoadingScreen() {
 }
 
 async function manageFileHandle(fileHandle) {
-  const file = await fileHandle.getFile();
+  const file = fileHandle.getFile ? await fileHandle.getFile() : fileHandle;
 
   // Display the file name without the extension
   fileName.textContent = file.name.replace(/\.[^.]+$/, "");
@@ -109,6 +316,7 @@ async function manageFileHandle(fileHandle) {
   if (video.src) {
     updateLocalStorage();
     URL.revokeObjectURL(video.src);
+    clearSubtitles();
   }
 
   // Don't change the order of these two lines! Otherwise, the loadedmetadata event
@@ -193,6 +401,28 @@ speedControls.onchange = () => {
 
 // Zoom
 zoomBtn.onclick = toggleZoom;
+
+// Subtitles
+if (subtitlesBtn) {
+  subtitlesBtn.onclick = toggleSubtitles;
+  subtitlesBtn.oncontextmenu = (e) => {
+    e.preventDefault();
+    pickSubtitleFile();
+  };
+}
+
+subtitlePicker?.addEventListener("change", async (e) => {
+  if (e.target.files?.length) {
+    await loadSubtitleFile(e.target.files[0]);
+    subtitlePicker.value = "";
+  }
+});
+
+if (video.textTracks) {
+  video.textTracks.addEventListener("change", updateSubtitlesBtnState);
+  video.textTracks.addEventListener("addtrack", updateSubtitlesBtnState);
+  video.textTracks.addEventListener("removetrack", updateSubtitlesBtnState);
+}
 
 // TIME
 video.addEventListener("loadedmetadata", () => {
@@ -327,6 +557,10 @@ document.addEventListener("keydown", (e) => {
     case "a": // Preferred fast speed
       video.playbackRate = preferences.speed;
       break;
+    case "v": // Toggle subtitles
+    case "V":
+      toggleSubtitles();
+      break;
     case "c": // Toggle zoom
       toggleZoom();
       break;
@@ -445,11 +679,15 @@ async function computeFileSignature(
 }
 
 function updateLocalStorage() {
+  const hasShowingTrack =
+    video.textTracks &&
+    Array.from(video.textTracks).some((t) => t.mode === "showing");
   const state = {
     timer: video.currentTime,
     playbackRate: video.playbackRate,
     lastOpened: Date.now(),
     timeIndicator: timeIndicator.dataset.state,
+    subtitlesShowing: hasShowingTrack,
   };
   localStorage.setItem(localStorageKey, JSON.stringify(state));
 }
@@ -459,4 +697,16 @@ function restoreFromLocalStorage() {
   video.currentTime = state.timer;
   video.playbackRate = state.playbackRate;
   timeIndicator.dataset.state = state.timeIndicator;
+  if (
+    state.subtitlesShowing !== undefined &&
+    video.textTracks &&
+    video.textTracks.length > 0
+  ) {
+    for (let i = 0; i < video.textTracks.length; i++) {
+      video.textTracks[i].mode = state.subtitlesShowing
+        ? "showing"
+        : "disabled";
+    }
+    updateSubtitlesBtnState();
+  }
 }

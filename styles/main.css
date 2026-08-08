@@ -252,3 +252,15 @@ body {
     }
   }
 }
+
+#subtitles-btn[data-active="true"] {
+  color: var(--text1);
+  font-variation-settings: "FILL" 1;
+}
+
+video::cue {
+  font:
+    1.2rem "JetBrains Mono",
+    monospace;
+  border-radius: 0.25rem;
+}
